@@ -1,0 +1,11 @@
+{
+  "name": "pdf-tools",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "preview": "node scripts/preview.mjs",
+    "test": "node --test tests/unit.test.mjs",
+    "test:deploy": "python3 -m unittest discover -s deploy -p 'test_*.py' -v",
+    "test:e2e": "node tests/e2e-check.mjs"
+  }
+}

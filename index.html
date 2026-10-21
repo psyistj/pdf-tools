@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#090a0f">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>PDF Tools // 单页裁剪导出</title>
+  <link rel="icon" href="favicon.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-left">
+      <div class="logo-box" aria-hidden="true">
+        <svg class="logo-svg" viewBox="0 0 32 32">
+          <rect width="32" height="32" rx="6" fill="#1e2230"></rect>
+          <path d="M9 7h9l6 6v12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z" fill="none" stroke="#6366f1" stroke-width="1.6"></path>
+          <path d="M18 7v6h6" fill="none" stroke="#38bdf8" stroke-width="1.6"></path>
+        </svg>
+      </div>
+      <div class="title-group">
+        <h1>PDF Tools <span class="title-sep">//</span> 单页裁剪导出</h1>
+        <p class="subtitle">当前页矢量 CropBox 或栅格导出 · 解析、渲染与保存都在这台设备上完成</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <button type="button" class="tool-btn tool-btn-replace" id="btnOpen">打开 PDF</button>
+      <div class="privacy-badge">
+        <span class="dot-live"></span>
+        <span>100% 浏览器本地离线计算 · PDF 绝不上云</span>
+      </div>
+    </div>
+  </header>
+
+  <p id="bootError" class="boot-error" hidden></p>
+
+  <main class="workspace">
+    <aside class="page-rail" id="pageRail" tabindex="0" aria-label="页面列表">
+      <div class="rail-head">
+        <span>页面</span>
+        <span class="mode-pill">单页模式</span>
+      </div>
+      <div class="page-nav">
+        <button type="button" class="tool-btn" id="btnPrev" disabled>上一页</button>
+        <label class="page-field">
+          <span class="sr-only">页码</span>
+          <input id="pageInput" type="number" min="1" step="1" value="1" inputmode="numeric" disabled>
+          <span id="pageCountLabel">/ 0</span>
+        </label>
+        <button type="button" class="tool-btn" id="btnNext" disabled>下一页</button>
+      </div>
+      <p class="rail-note">列表内 ←/→ 翻页。裁剪与导出只作用于当前选中页。</p>
+      <ol class="thumb-list" id="thumbList"></ol>
+    </aside>
+
+    <section class="stage-section">
+      <div class="stage" id="stage" tabindex="0">
+        <canvas id="pageCanvas" class="stage-canvas"></canvas>
+        <canvas id="overlayCanvas" class="stage-canvas stage-overlay"></canvas>
+        <div class="dropzone" id="dropzone">
+          <input id="fileInput" class="sr-only" type="file" accept="application/pdf,.pdf">
+          <div class="dropzone-content">
+            <div class="dropzone-icon" aria-hidden="true">
+              <svg viewBox="0 0 48 48" class="drop-svg">
+                <path d="M14 8h14l8 8v22a3 3 0 0 1-3 3H14a3 3 0 0 1-3-3V11a3 3 0 0 1 3-3z" fill="none" stroke="currentColor" stroke-width="1.8"></path>
+                <path d="M28 8v8h8" fill="none" stroke="#38bdf8" stroke-width="1.8"></path>
+                <path d="M18 30h12M18 35h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+              </svg>
+            </div>
+            <p class="dropzone-title">拖拽 PDF 到此处，或 <button type="button" class="text-button" id="btnBrowse">选择本地文件</button></p>
+            <p class="dropzone-desc">仅接受 application/pdf。损坏或加密文件会给出明确提示，不会白屏。文件不会上传。</p>
+            <div class="dropzone-shortcuts">也可直接 <kbd>Ctrl</kbd> / <kbd>⌘</kbd> + <kbd>V</kbd> 粘贴剪贴板中的 PDF</div>
+          </div>
+        </div>
+        <div class="drop-hint" id="dropHint">松开以打开这份 PDF</div>
+        <div class="dim-pill" id="dimPill" hidden>
+          <span class="mode-pill">单页</span>
+          <span class="dim-sep">·</span>
+          <span id="pillMm">—</span>
+          <span class="dim-sep">·</span>
+          <span id="pillPx">—</span>
+        </div>
+      </div>
+      <div class="stage-toolbar">
+        <p class="key-hint">预览区方向键微调 1px，Shift 为 10px · ⌘/Ctrl + ←/→ 翻页</p>
+      </div>
+    </section>
+
+    <aside class="sidebar-section">
+      <div class="ctrl-card" id="fileCard">
+        <div class="card-title">
+          <span>01. 文档</span>
+          <span class="preset-tag">本地</span>
+        </div>
+        <div id="fileMeta" hidden>
+          <p class="file-name" id="fileName"></p>
+          <p class="file-stats"><span id="fileSize"></span><span class="dim-sep">·</span><span id="filePages"></span></p>
+        </div>
+        <p class="guide-tip" id="fileEmpty">尚未载入文件。</p>
+        <div class="banner banner-warn" id="riskBanner" hidden role="status">
+          <p id="riskText"></p>
+          <button type="button" class="text-button" id="btnDismissRisk">知道了</button>
+        </div>
+      </div>
+
+      <div class="ctrl-card">
+        <div class="card-title">
+          <span>02. 比例</span>
+          <span class="preset-tag">单页模式</span>
+        </div>
+        <div class="preset-grid" id="presetList"></div>
+        <div class="crop-actions">
+          <button type="button" class="tool-btn" id="btnSelectAll" disabled>全选页面</button>
+          <button type="button" class="tool-btn" id="btnReset" disabled>重置</button>
+          <button type="button" class="tool-btn" id="btnCenter" disabled>居中</button>
+        </div>
+      </div>
+
+      <div class="ctrl-card">
+        <div class="card-title">
+          <span>03. 裁剪框</span>
+          <div class="unit-toggle" role="group" aria-label="数值单位">
+            <button type="button" class="unit-btn is-active" id="unitPx" aria-pressed="true">px</button>
+            <button type="button" class="unit-btn" id="unitMm" aria-pressed="false">mm</button>
+          </div>
+        </div>
+        <p class="guide-tip">px 与 mm 按 300 DPI 换算。拖拽框体移动，八个控制点缩放。</p>
+        <div class="num-grid">
+          <label class="input-field">X<input id="cropX" inputmode="decimal" autocomplete="off" disabled></label>
+          <label class="input-field">Y<input id="cropY" inputmode="decimal" autocomplete="off" disabled></label>
+          <label class="input-field">宽<input id="cropW" inputmode="decimal" autocomplete="off" disabled></label>
+          <label class="input-field">高<input id="cropH" inputmode="decimal" autocomplete="off" disabled></label>
+        </div>
+      </div>
+
+      <div class="ctrl-card export-card">
+        <div class="card-title">
+          <span>04. 导出当前页</span>
+          <span class="preset-tag">仅此页</span>
+        </div>
+        <div class="format-group" role="radiogroup" aria-label="导出格式">
+          <label class="radio-label"><input type="radio" name="format" id="formatPdf" value="pdf" checked>矢量 PDF</label>
+          <label class="radio-label"><input type="radio" name="format" id="formatPng" value="png">PNG</label>
+          <label class="radio-label"><input type="radio" name="format" id="formatJpg" value="jpg">JPG</label>
+        </div>
+        <div class="setting-row" id="dpiRow" hidden>
+          <span class="setting-label">DPI</span>
+          <select id="dpiSelect" class="select-box">
+            <option value="96">96</option>
+            <option value="150">150</option>
+            <option value="300" selected>300</option>
+            <option value="600">600</option>
+          </select>
+        </div>
+        <div class="setting-row" id="jpgRow" hidden>
+          <span class="setting-label">JPG 质量 <span id="jpgQualityVal">92%</span></span>
+          <input id="jpgQuality" type="range" min="0.4" max="1" step="0.01" value="0.92">
+        </div>
+        <div class="progress-wrap" id="progressWrap" hidden>
+          <div class="progress-track" id="progressTrack"><div class="progress-bar"></div></div>
+          <p id="progressLabel">正在导出…</p>
+        </div>
+        <div class="banner banner-error" id="errorBanner" hidden role="alert">
+          <p id="errorText"></p>
+          <button type="button" class="tool-btn" id="btnRetry" hidden>重试</button>
+        </div>
+        <button type="button" class="btn-primary" id="btnExport" disabled>导出当前页</button>
+        <p class="export-note" id="exportStatus">矢量 PDF 保留文字与路径；PNG / JPG 只输出裁剪区域。</p>
+      </div>
+    </aside>
+  </main>
+
+  <div class="modal" id="riskDialog" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="riskDialogTitle">
+      <h2 id="riskDialogTitle">性能提示</h2>
+      <p id="riskDialogText"></p>
+      <div class="modal-actions">
+        <button type="button" class="tool-btn" id="riskCancel">取消</button>
+        <button type="button" class="btn-primary" id="riskContinue">继续</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>
