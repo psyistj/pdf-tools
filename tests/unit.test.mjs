@@ -246,3 +246,15 @@ test('vector export writes MediaBox and CropBox for the selected page only', asy
     assert.ok(Math.abs(box.height - expected.height) < 0.01);
   }
 });
+
+test('empty state never claims a page number and shows a rail placeholder', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+  const app = await readFile(new URL('../src/app.js', import.meta.url), 'utf8');
+  assert.ok(html.includes('id="railEmpty"'), 'the page rail needs an empty-state placeholder');
+  assert.ok(html.includes('placeholder="—"'), 'the page input needs an em-dash placeholder');
+  assert.ok(html.includes('/ —'), 'the page counter must not start at "/ 0"');
+  assert.ok(app.includes("'/ —'"), 'the app must render an em-dash counter without a document');
+  assert.ok(app.includes("hasDoc ? String(state.pageNumber || 1) : ''"), 'the page input must stay empty without a document');
+  assert.ok(app.includes("$('railEmpty').hidden"), 'the placeholder must be toggled with the document state');
+});

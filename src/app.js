@@ -136,8 +136,9 @@ function sync() {
   $('btnNext').disabled = !hasDoc || state.busy || state.pageNumber >= state.pageCount;
   $('pageInput').disabled = !hasDoc || state.busy;
   $('pageInput').max = String(Math.max(1, state.pageCount));
-  if (document.activeElement !== $('pageInput')) $('pageInput').value = String(state.pageNumber || 1);
-  $('pageCountLabel').textContent = `/ ${state.pageCount || 0}`;
+  if (document.activeElement !== $('pageInput')) $('pageInput').value = hasDoc ? String(state.pageNumber || 1) : '';
+  $('pageCountLabel').textContent = hasDoc ? `/ ${state.pageCount}` : '/ —';
+  if (!state.busy) $('railEmpty').hidden = hasDoc || state.pageCount > 0;
   for (const id of ['btnSelectAll', 'btnReset', 'btnCenter', 'cropX', 'cropY', 'cropW', 'cropH']) {
     $(id).disabled = !hasDoc || state.busy;
   }

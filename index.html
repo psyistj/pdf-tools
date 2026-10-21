@@ -46,13 +46,14 @@
         <button type="button" class="tool-btn" id="btnPrev" disabled>上一页</button>
         <label class="page-field">
           <span class="sr-only">页码</span>
-          <input id="pageInput" type="number" min="1" step="1" value="1" inputmode="numeric" disabled>
-          <span id="pageCountLabel">/ 0</span>
+          <input id="pageInput" type="number" min="1" step="1" value="1" placeholder="—" inputmode="numeric" disabled>
+          <span id="pageCountLabel">/ —</span>
         </label>
         <button type="button" class="tool-btn" id="btnNext" disabled>下一页</button>
       </div>
       <p class="rail-note">列表内 ←/→ 翻页。裁剪与导出只作用于当前选中页。</p>
       <ol class="thumb-list" id="thumbList"></ol>
+      <p class="rail-empty" id="railEmpty">尚未载入 PDF<br><span>拖拽文件到右侧预览区，或点右上「打开 PDF」</span></p>
     </aside>
 
     <section class="stage-section">
@@ -112,7 +113,7 @@
         </div>
         <div class="preset-grid" id="presetList"></div>
         <div class="crop-actions">
-          <button type="button" class="tool-btn" id="btnSelectAll" disabled>全选页面</button>
+          <button type="button" class="tool-btn" id="btnSelectAll" disabled>整页</button>
           <button type="button" class="tool-btn" id="btnReset" disabled>重置</button>
           <button type="button" class="tool-btn" id="btnCenter" disabled>居中</button>
         </div>

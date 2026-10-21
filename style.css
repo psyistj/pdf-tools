@@ -7,7 +7,7 @@
   --border-focus: #4f5875;
   --text: #e2e8f0;
   --text-muted: #8c93a8;
-  --text-dim: #555b70;
+  --text-dim: #6c7390;
   --accent: #6366f1;
   --accent-glow: rgba(99, 102, 241, 0.35);
   --cyan: #38bdf8;
@@ -251,6 +251,30 @@ button:disabled, input:disabled, select:disabled {
   gap: 8px;
   min-height: 0;
   flex: 1;
+}
+
+.rail-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+  padding: 20px 14px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  text-align: center;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.rail-empty span {
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--text-dim);
+  line-height: 1.5;
 }
 
 .thumb {
